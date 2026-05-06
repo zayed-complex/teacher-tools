@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل المتابعة الذكي | Student Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #4f46e5; }
+        body { font-family: 'Cairo', 'Inter', sans-serif; background-color: #f8fafc; transition: all 0.3s ease; }
+        [dir="ltr"] { font-family: 'Inter', 'Cairo', sans-serif; }
+        .student-card { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; position: relative; border-radius: 1.25rem; }
+        .student-card.selected { border-color: var(--primary); background-color: #eef2ff; transform: scale(0.98); }
+        .student-card.selected::after { content: '✓'; position: absolute; top: 8px; left: 8px; background: var(--primary); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        
+        .switch-container { display: flex; align-items: center; gap: 8px; background: #f1f5f9; padding: 4px; border-radius: 999px; cursor: pointer; border: 1px solid #e2e8f0; position: relative; width: 100px; height: 36px; }
+        .switch-slider { position: absolute; width: 46px; height: 28px; background: white; border-radius: 999px; transition: 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1); left: 4px; }
+        [dir="rtl"] .switch-slider { left: 50px; }
+        .switch-label { flex: 1; text-align: center; z-index: 10; font-size: 10px; font-weight: 900; color: #64748b; }
+        .active-lang { color: var(--primary); }
+
+        .gradient-bg { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .top-badge { animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    </style>
+</head>
+<body id="app-body" class="p-4 md:p-6 min-h-screen">
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl text-xs font-bold shadow-2xl translate-y-20 opacity-0 transition-all z-50"></div>
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <header class="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <img src="https://board-ey1r.onrender.com/icons/logo.png" alt="Logo" class="h-14">
+                <div class="text-right rtl:text-right ltr:text-left">
+                    <h1 id="ui-title" class="text-xl font-black text-slate-800">سجل المتابعة اليومي الذكي</h1>
+                    <p id="ui-subtitle" class="text-[10px] text-indigo-600 font-bold tracking-widest uppercase">Student Performance Tracker</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-end">
+                <div class="switch-container" onclick="toggleLanguage()">
+                    <div class="switch-slider" id="lang-slider"></div>
+                    <span class="switch-label" id="lang-en">EN</span>
+                    <span class="switch-label" id="lang-ar">AR</span>
+                </div>
+                <button onclick="toggleConfig(true)" id="ui-settings-btn" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-[11px] font-black border border-indigo-100">الإعدادات</button>
+            </div>
+        </header>
+
+        <div id="leaders-board" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+            <div class="bg-amber-50 border border-amber-100 p-4 rounded-[1.5rem] flex items-center gap-4">
+                <div class="bg-amber-100 p-3 rounded-full text-xl top-badge">⭐</div>
+                <div>
+                    <h4 id="ui-top-acad" class="text-[10px] font-black text-amber-700 uppercase">رواد الأداء المتميز</h4>
+                    <p id="top-acad-list" class="text-sm font-bold text-amber-900">جاري الحساب...</p>
+                </div>
+            </div>
+            <div class="bg-blue-50 border border-blue-100 p-4 rounded-[1.5rem] flex items-center gap-4">
+                <div class="bg-blue-100 p-3 rounded-full text-xl top-badge">🛡️</div>
+                <div>
+                    <h4 id="ui-top-behav" class="text-[10px] font-black text-blue-700 uppercase">قادة الانضباط</h4>
+                    <p id="top-behav-list" class="text-sm font-bold text-blue-900">جاري الحساب...</p>
+                </div>
+            </div>
+        </div>
+
+        <section id="config-section" class="bg-white rounded-[2.5rem] p-6 shadow-xl border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="space-y-2">
+                    <label id="ui-label-teacher" class="text-[11px] font-black text-slate-400 px-1 uppercase">بيانات المعلم</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="teacher-name-input" class="flex-1 p-3.5 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none" placeholder="الاسم">
+                        <select id="subject-select" class="w-36 p-3.5 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none"></select>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label id="ui-label-class" class="text-[11px] font-black text-slate-400 px-1 uppercase">الصف والمسار</label>
+                    <div class="flex gap-2">
+                        <select id="grade-select" class="w-20 p-3.5 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none">
+                            <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                            <option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                        </select>
+                        <select id="stream-select" class="flex-1 p-3.5 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none">
+                            <option value="عام">عام (General)</option>
+                            <option value="متقدم">متقدم (Advanced)</option>
+                            <option value="نخبة">نخبة (Elite)</option>
+                        </select>
+                        <select id="section-select" class="w-20 p-3.5 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none">
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label id="ui-label-pass" class="text-[11px] font-black text-slate-400 px-1 uppercase">الأمان</label>
+                    <div class="flex gap-2">
+                        <input type="password" id="access-password" class="flex-1 p-3.5 bg-slate-50 rounded-2xl border-none font-bold text-sm outline-none text-center" placeholder="****">
+                        <button onclick="accessClass()" id="ui-btn-open" class="bg-indigo-600 text-white px-6 rounded-2xl font-black text-sm">فتح</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="bg-indigo-600 p-6 rounded-[2rem] text-white shadow-lg flex flex-col justify-center">
+                <p id="ui-stat-act" class="text-[10px] font-black opacity-80 uppercase">نسبة التفعيل</p>
+                <h2 id="class-activation" class="text-5xl font-black mt-1">0%</h2>
+                <p id="auth-status" class="text-[9px] mt-4 opacity-60">Status: connecting...</p>
+            </div>
+
+            <div class="lg:col-span-3 bg-white rounded-[2.5rem] p-6 border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <p id="ui-acad-title" class="text-[10px] font-black text-indigo-500 uppercase">أدوات الرصد اليومي</p>
+                    <div class="flex gap-2">
+                        <button onclick="selectAll(true)" id="ui-btn-all" class="text-[9px] font-black bg-slate-100 px-3 py-1 rounded-lg">تحديد الكل</button>
+                        <button onclick="selectAll(false)" id="ui-btn-none" class="text-[9px] font-black bg-slate-100 px-3 py-1 rounded-lg">إلغاء التحديد</button>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div id="acad-actions" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div>
+                    <div class="border-t border-slate-100 pt-4">
+                        <div id="behav-actions" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-4">
+                <div id="students-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white rounded-[2.5rem] p-6 border border-slate-200">
+                    <h3 id="ui-names-title" class="font-black text-xs mb-4">قائمة أسماء الطلاب</h3>
+                    <textarea id="names-input" rows="5" class="w-full p-4 bg-slate-50 rounded-2xl text-[10px] font-bold outline-none border-none resize-none" placeholder="اكتب الأسماء هنا..."></textarea>
+                    <button onclick="syncNames()" id="ui-btn-save" class="w-full mt-3 bg-slate-800 text-white py-4 rounded-2xl text-[11px] font-black">تحديث الأسماء</button>
+                </div>
+
+                <div class="gradient-bg rounded-[2.5rem] p-6 text-white space-y-4">
+                    <button onclick="exportToExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all">
+                        <span>📊</span>
+                        <span id="ui-btn-export">تصدير تقرير Excel المطور</span>
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-[2.5rem] p-6 border border-slate-200">
+                    <h3 id="ui-recent-title" class="font-black text-[10px] text-slate-400 uppercase mb-4">آخر التفاعلات اليوم</h3>
+                    <div id="recent-logs" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ✅ FIREBASE CONFIG - REPLACE WITH YOUR FIREBASE PROJECT SETTINGS
+    // Get these from: Firebase Console > Project Settings > Your apps > Firebase SDK snippet
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY_HERE",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    let app, auth, db;
+    try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+    } catch (error) {
+        console.error("Firebase initialization error:", error);
+        document.getElementById('auth-status').innerText = "❌ Firebase Config Error";
+        alert("خطأ في إعدادات Firebase. يرجى التحقق من firebaseConfig في الكود.");
+    }
+
+    const appId = 'student-pro-v4';
+
+    const subjects = [
+        "اللغة العربية", "English", "الرياضيات", "العلوم", "الفيزياء", "الكيمياء", "الأحياء", 
+        "التربية الإسلامية", "الدراسات الاجتماعية", "الحاسوب", "الفنون", "الرياضة", "إدارة الأعمال"
+    ];
+
+    const actions = [
+        { id: 'a1', p: 3, icon: '🎤', label: 'تسميع متقن', labelEn: 'Recitation', type: 'academic', color: 'indigo' },
+        { id: 'a2', p: 2, icon: '⭐', label: 'مشاركة', labelEn: 'Participation', type: 'academic', color: 'blue' },
+        { id: 'a3', p: 2, icon: '📚', label: 'واجب', labelEn: 'Homework', type: 'academic', color: 'emerald' },
+        { id: 'a4', p: -1, icon: '🔇', label: 'غير متقن', labelEn: 'Not Proficient', type: 'academic', color: 'amber' },
+        { id: 'a5', p: -2, icon: '❌', label: 'لا واجب', labelEn: 'No Homework', type: 'academic', color: 'rose' },
+        
+        { id: 'b1', p: 2, icon: '💎', label: 'انضباط', labelEn: 'Discipline', type: 'behavior', color: 'teal' },
+        { id: 'b2', p: -2, icon: '⏰', label: 'تأخر', labelEn: 'Late', type: 'behavior', color: 'orange' },
+        { id: 'b3', p: -2, icon: '⚠️', label: 'سلوك', labelEn: 'Behavior', type: 'behavior', color: 'rose' },
+        { id: 'b4', p: -2, icon: '💤', label: 'نوم', labelEn: 'Sleeping', type: 'behavior', color: 'slate' }
+    ];
+
+    const UI_STRINGS = {
+        ar: {
+            title: "سجل المتابعة اليومي الذكي", subtitle: "Digital Student Performance Tracker", settings: "الإعدادات",
+            lTeacher: "بيانات المعلم", lClass: "الصف والمسار", lPass: "الأمان",
+            btnOpen: "فتح", statAct: "نسبة التفعيل", acadTitle: "أدوات الرصد اليومي",
+            btnAll: "تحديد الكل", btnNone: "إلغاء التحديد", namesTitle: "قائمة الأسماء",
+            btnSave: "تحديث الأسماء", btnExport: "تصدير التقرير المطور", recentTitle: "آخر التفاعلات",
+            msgSelect: "اختر طالباً أولاً", msgSuccess: "تم الرصد بنجاح", msgSynced: "تم تحديث القائمة",
+            topAcad: "رواد الأداء المتميز", topBehav: "قادة الانضباط"
+        },
+        en: {
+            title: "Smart Tracking System", subtitle: "Digital Student Performance Tracker", settings: "Settings",
+            lTeacher: "Teacher Info", lClass: "Grade & Stream", lPass: "Security",
+            btnOpen: "Open", statAct: "Activation %", acadTitle: "Monitoring Tools",
+            btnAll: "Select All", btnNone: "Deselect", namesTitle: "Student List",
+            btnSave: "Update List", btnExport: "Export Excel Report", recentTitle: "Recent Logs",
+            msgSelect: "Select students first", msgSuccess: "Saved successfully", msgSynced: "List updated",
+            topAcad: "Academic Leaders", topBehav: "Discipline Leaders"
+        }
+    };
+
+    let state = { lang: 'ar', students: [], logs: [], selected: new Set(), user: null, activeListeners: [], currentConfig: {} };
+    let currentClassKey = "";
+
+    window.onload = () => {
+        populateSubjects();
+        renderActions();
+        initAuth();
+    };
+
+    function populateSubjects() {
+        const sel = document.getElementById('subject-select');
+        subjects.forEach(s => sel.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+
+    function renderActions() {
+        const acadContainer = document.getElementById('acad-actions');
+        const behavContainer = document.getElementById('behav-actions');
+        
+        const renderBtn = a => `
+            <button onclick="logAction(${a.p}, '${a.icon}', '${a.type}', '${state.lang === 'ar' ? a.label : a.labelEn}')" 
+                    class="p-2 rounded-xl bg-${a.color}-50 text-${a.color}-700 hover:bg-${a.color}-600 hover:text-white transition-all text-center flex flex-col items-center justify-center border border-${a.color}-100">
+                <span class="text-lg">${a.icon}</span>
+                <span class="text-[9px] font-bold mt-0.5 truncate w-full">${state.lang === 'ar' ? a.label : a.labelEn} (${a.p > 0 ? '+' : ''}${a.p})</span>
+            </button>`;
+
+        acadContainer.innerHTML = actions.filter(a => a.type === 'academic').map(renderBtn).join('');
+        behavContainer.innerHTML = actions.filter(a => a.type === 'behavior').map(renderBtn).join('');
+    }
+
+    window.toggleLanguage = () => {
+        state.lang = state.lang === 'ar' ? 'en' : 'ar';
+        const body = document.getElementById('app-body');
+        body.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+        
+        document.getElementById('lang-ar').classList.toggle('active-lang', state.lang === 'ar');
+        document.getElementById('lang-en').classList.toggle('active-lang', state.lang === 'en');
+        
+        updateUIStrings();
+        renderActions();
+        render();
+    };
+
+    function updateUIStrings() {
+        const s = UI_STRINGS[state.lang];
+        document.getElementById('ui-title').innerText = s.title;
+        document.getElementById('ui-subtitle').innerText = s.subtitle;
+        document.getElementById('ui-settings-btn').innerText = s.settings;
+        document.getElementById('ui-label-teacher').innerText = s.lTeacher;
+        document.getElementById('ui-label-class').innerText = s.lClass;
+        document.getElementById('ui-label-pass').innerText = s.lPass;
+        document.getElementById('ui-btn-open').innerText = s.btnOpen;
+        document.getElementById('ui-stat-act').innerText = s.statAct;
+        document.getElementById('ui-acad-title').innerText = s.acadTitle;
+        document.getElementById('ui-btn-all').innerText = s.btnAll;
+        document.getElementById('ui-btn-none').innerText = s.btnNone;
+        document.getElementById('ui-names-title').innerText = s.namesTitle;
+        document.getElementById('ui-btn-save').innerText = s.btnSave;
+        document.getElementById('ui-btn-export').innerText = s.btnExport;
+        document.getElementById('ui-recent-title').innerText = s.recentTitle;
+        document.getElementById('ui-top-acad').innerText = s.topAcad;
+        document.getElementById('ui-top-behav').innerText = s.topBehav;
+    }
+
+    const initAuth = async () => {
+        try {
+            await signInAnonymously(auth);
+        } catch (error) {
+            console.error("Auth error:", error);
+            document.getElementById('auth-status').innerText = "❌ Connection Failed";
+        }
+    };
+
+    onAuthStateChanged(auth, u => { 
+        state.user = u; 
+        document.getElementById('auth-status').innerText = u ? "متصل سحابياً ✓" : "جاري الاتصال...";
+    });
+
+    window.accessClass = () => {
+        const t = document.getElementById('teacher-name-input').value.trim();
+        const p = document.getElementById('access-password').value.trim();
+        if (!t || !p) return showToast("Error: Empty Fields");
+        
+        state.currentConfig = { 
+            t, 
+            sub: document.getElementById('subject-select').value, 
+            grd: document.getElementById('grade-select').value, 
+            strm: document.getElementById('stream-select').value, 
+            sec: document.getElementById('section-select').value 
+        };
+        
+        currentClassKey = btoa(unescape(encodeURIComponent(`${t}-${state.currentConfig.grd}-${state.currentConfig.strm}-${state.currentConfig.sec}-${p}`))).replace(/[/+=]/g, "");
+        toggleConfig(false);
+        document.getElementById('leaders-board').classList.remove('hidden');
+        startSync();
+    };
+
+    function startSync() {
+        if (!state.user) return;
+        state.activeListeners.forEach(u => u());
+        state.activeListeners = [];
+
+        state.activeListeners.push(onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'configs', currentClassKey), snap => {
+            state.students = snap.exists() ? snap.data().list || [] : [];
+            document.getElementById('names-input').value = state.students.map(s => s.name).join('\n');
+            render();
+        }));
+
+        state.activeListeners.push(onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), snap => {
+            state.logs = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(l => l.classId === currentClassKey);
+            render();
+        }));
+    }
+
+    window.selectAll = (v) => {
+        state.students.forEach(s => v ? state.selected.add(s.id) : state.selected.delete(s.id));
+        render();
+    };
+
+    window.logAction = async (points, icon, type, label) => {
+        if (state.selected.size === 0) return showToast(UI_STRINGS[state.lang].msgSelect);
+        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
+        const promises = Array.from(state.selected).map(sId => {
+            const s = state.students.find(x => x.id === sId);
+            return addDoc(colRef, {
+                classId: currentClassKey,
+                studentId: sId,
+                studentName: s.name,
+                points, label: icon, type,
+                time: serverTimestamp()
+            });
+        });
+        await Promise.all(promises);
+        state.selected.clear();
+        showToast(UI_STRINGS[state.lang].msgSuccess);
+        render();
+    };
+
+    window.syncNames = async () => {
+        if (!currentClassKey) return;
+        const names = document.getElementById('names-input').value.split('\n').filter(n => n.trim());
+        const newList = names.map((n, i) => ({ id: `s_${Date.now()}_${i}`, name: n.trim() }));
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'configs', currentClassKey), { list: newList, updatedAt: serverTimestamp() });
+        showToast(UI_STRINGS[state.lang].msgSynced);
+    };
+
+    function render() {
+        const startOfDay = new Date().setHours(0,0,0,0);
+        const processed = state.students.map(s => {
+            const sLogs = state.logs.filter(l => l.studentId === s.id);
+            const acad = sLogs.filter(l => l.type === 'academic').reduce((a, b) => a + b.points, 0);
+            const behav = sLogs.filter(l => l.type === 'behavior').reduce((a, b) => a + b.points, 0);
+            const activeToday = sLogs.some(l => l.time && (l.time.toDate ? l.time.toDate().getTime() : l.time.seconds*1000) >= startOfDay);
+            return { ...s, acad, behav, activeToday };
+        });
+
+        const topAcad = [...processed].sort((a,b) => b.acad - a.acad).slice(0, 3).filter(s => s.acad > 0);
+        const topBehav = [...processed].sort((a,b) => b.behav - a.behav).slice(0, 3).filter(s => s.behav > 0);
+
+        document.getElementById('top-acad-list').innerHTML = topAcad.length ? topAcad.map(s => s.name).join(' | ') : '---';
+        document.getElementById('top-behav-list').innerHTML = topBehav.length ? topBehav.map(s => s.name).join(' | ') : '---';
+
+        const activeCount = processed.filter(s => s.activeToday).length;
+        document.getElementById('class-activation').innerText = state.students.length ? `${Math.round((activeCount/state.students.length)*100)}%` : '0%';
+
+        document.getElementById('students-grid').innerHTML = processed.map(s => `
+            <div onclick="toggleSelection('${s.id}')" class="student-card bg-white p-3 border ${state.selected.has(s.id)?'selected shadow-indigo-100':'border-slate-100'}">
+                <h4 class="font-black text-slate-800 text-[9px] truncate text-center">${s.name}</h4>
+                <div class="flex justify-between mt-2 text-[8px] font-black px-1">
+                    <span class="text-indigo-500">A:${s.acad}</span>
+                    <span class="text-emerald-500">B:${s.behav}</span>
+                </div>
+            </div>
+        `).join('');
+
+        const recent = [...state.logs].sort((a,b) => (b.time?.seconds || 0) - (a.time?.seconds || 0)).slice(0, 8);
+        document.getElementById('recent-logs').innerHTML = recent.map(l => `
+            <div class="text-[9px] p-2 bg-slate-50 rounded-xl border-r-2 ${l.type==='academic'?'border-indigo-400':'border-emerald-400'}">
+                <span class="font-black">${l.studentName}</span>: ${l.label}
+            </div>
+        `).join('');
+    }
+
+    window.toggleSelection = (id) => {
+        if (state.selected.has(id)) state.selected.delete(id);
+        else state.selected.add(id);
+        render();
+    };
+
+    window.toggleConfig = (s) => document.getElementById('config-section').classList.toggle('hidden', !s);
+
+    window.exportToExcel = () => {
+        if (!state.students.length) return showToast("Empty List");
+
+        const summary = [
+            ["سجل المتابعة اليومي - مجمّع زايد"],
+            [`المادة: ${state.currentConfig.sub}`, `المعلم: ${state.currentConfig.t}`],
+            [`الصف: ${state.currentConfig.grd} / ${state.currentConfig.strm} - ${state.currentConfig.sec}`],
+            [],
+            ["الاسم", "النقاط الأكاديمية", "النقاط السلوكية", "الإجمالي"],
+        ];
+        state.students.forEach(s => {
+            const l = state.logs.filter(lx => lx.studentId === s.id);
+            const a = l.filter(lx => lx.type === 'academic').reduce((v, b) => v + b.points, 0);
+            const b = l.filter(lx => lx.type === 'behavior').reduce((v, b) => v + b.points, 0);
+            summary.push([s.name, a, b, a+b]);
+        });
+        const ws1 = XLSX.utils.aoa_to_sheet(summary);
+
+        const uniqueDates = [...new Set(state.logs.map(l => {
+            const d = l.time?.toDate ? l.time.toDate() : null;
+            return d ? d.toLocaleDateString('ar-AE') : null;
+        }))].filter(Boolean).sort((a, b) => new Date(a) - new Date(b));
+
+        const timeline = [
+            ["سجل المتابعة اليومي - مجمّع زايد"],
+            [`المادة: ${state.currentConfig.sub}`, `المعلم: ${state.currentConfig.t}`],
+            [`الصف: ${state.currentConfig.grd} / ${state.currentConfig.strm} - ${state.currentConfig.sec}`],
+            [],
+            ["التقرير الزمنى المفصل"]
+        ];
+
+        const h1 = ["", "", ...uniqueDates.flatMap(d => [d, "", ""])];
+        const h2 = ["الرقم", "الاسم", ...uniqueDates.flatMap(() => ["النقاط الأكاديمية", "النقاط السلوكية", ""])];
+        timeline.push(h1, h2);
+
+        state.students.forEach((s, idx) => {
+            const row = [idx + 1, s.name];
+            uniqueDates.forEach(d => {
+                const dl = state.logs.filter(l => l.studentId === s.id && (l.time?.toDate ? l.time.toDate() : null)?.toLocaleDateString('ar-AE') === d);
+                row.push(
+                    dl.filter(l => l.type === 'academic').map(l => l.label).join(' '),
+                    dl.filter(l => l.type === 'behavior').map(l => l.label).join(' '),
+                    ""
+                );
+            });
+            timeline.push(row);
+        });
+
+        timeline.push([], ["مفتاح الرموز (Legend):"]);
+        actions.forEach(a => timeline.push(["", `${a.icon} ${a.label}`, `${a.p > 0 ? '+' : ''}${a.p} نقاط (${a.type === 'academic' ? 'أكاديمي' : 'سلوكي'})`]));
+
+        const ws2 = XLSX.utils.aoa_to_sheet(timeline);
+        
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws1, "الملخص العام");
+        XLSX.utils.book_append_sheet(wb, ws2, "التقرير الزمني");
+        XLSX.writeFile(wb, `Tracker_${state.currentConfig.grd}_${state.currentConfig.strm}.xlsx`);
+    };
+
+    function showToast(m) {
+        const t = document.getElementById('toast');
+        t.innerText = m;
+        t.classList.remove('translate-y-20', 'opacity-0');
+        setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 2500);
+    }
+</script>
+</body>
+</html>

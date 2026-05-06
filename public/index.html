@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حقيبة المعلم الرقمية المتكاملة - مجمّع زايد</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-6">
+
+    <div class="max-w-4xl w-full">
+        <div class="text-center mb-12">
+            <img src="https://board-ey1r.onrender.com/icons/logo.png" alt="Logo" class="h-24 mx-auto mb-6 drop-shadow-md">
+            <h1 class="text-4xl font-black text-slate-800 mb-2">حقيبة المعلم الرقمية المتكاملة</h1>
+            <p class="text-lg text-slate-600 font-bold">مجمّع زايد التعليمي (ح2 & ح3)</p>
+            <div class="mt-4 inline-block px-4 py-1 bg-sky-100 text-sky-700 rounded-full text-sm font-bold shadow-sm">
+                عام 2025 - 2026
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <a href="lessonplanner.html" class="glass-card p-8 rounded-3xl text-center group">
+                <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-black text-slate-800 mb-2">مخطط الدروس</h3>
+                <p class="text-sm text-slate-500 font-bold leading-relaxed">توليد خطط ذكية متوافقة مع معايير الوزارة والمجموعات الثلاث.</p>
+            </a>
+
+            <a href="DailyFollowup_Smart.html" class="glass-card p-8 rounded-3xl text-center group border-2 border-sky-200 shadow-lg shadow-sky-100">
+                <div class="w-16 h-16 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-sky-600 group-hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 114 0m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-black text-slate-800 mb-2">المتابعة اليومية</h3>
+                <p class="text-sm text-slate-500 font-bold leading-relaxed">رصد الحضور، المشاركة، والسلوك لجميع الفصول بضغطة زر.</p>
+            </a>
+
+            
+            <a href="exam_generator.html" class="glass-card p-8 rounded-3xl text-center group">
+                <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-black text-slate-800 mb-2">مولد الامتحانات</h3>
+                <p class="text-sm text-slate-500 font-bold leading-relaxed">توليد نماذج امتحان متعددة (A, B, C, D) بأسئلة موضوعية ومقالية وHOTS.</p>
+            </a>
+
+            <a href="WorksheetGenerator.html" class="glass-card p-8 rounded-3xl text-center group">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-black text-slate-800 mb-2">ورقة العمل المتمايزة</h3>
+                <p class="text-sm text-slate-500 font-bold leading-relaxed">تصميم أوراق عمل بثلاث مستويات: المجموعة الأولى، الثانية، وأسئلة التحدي.</p>
+            </a>
+
+        </div>
+
+        <div class="mt-16 text-center text-slate-400 text-xs font-bold">
+            نظام الإدارة التعليمية الذكي v4.0 © 2026 <br>
+            تم التطوير لدعم الكوادر التعليمية في مجمّع زايد التعليمي - د. علي أحمد
+        </div>
+    </div>
+
+</body>
+</html>
