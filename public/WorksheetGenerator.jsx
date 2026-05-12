@@ -62,8 +62,8 @@ STRICT RULES:
   ]
 }. No markdown.`;
 
-        const response = await axios.post(
-            "[generativelanguage.googleapis.com](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent)",
+const response = await axios.post(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
             {
                 contents: [{ parts: [{ text: promptText }] }],
                 systemInstruction: { parts: [{ text: systemInstruction }] },
@@ -95,16 +95,15 @@ STRICT RULES:
 /* =========================
    LESSON PLAN ROUTE (الأصلي)
 ========================= */
-app.post("/generate-lesson", async (req, res) => {
+app.post("/api/generate-lesson", async (req, res) => {
     try {
         const { prompt } = req.body;
 
         if (!prompt) {
             return res.status(400).json({ error: "Prompt is required" });
         }
-
         const response = await axios.post(
-            "[generativelanguage.googleapis.com](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent)",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent",
             {
                 contents: [{ parts: [{ text: prompt }] }]
             },
