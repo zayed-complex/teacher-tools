@@ -79,7 +79,7 @@
 
         .measurement-badge { background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; font-size: 8px; padding: 1px 4px; border-radius: 4px; margin-top: 4px; display: block; font-weight: bold; }
 
-        .maiada-stamp { font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 9px; color: #94a3b8; letter-spacing: 0.5px; text-align: center; line-height: 1.1; border: 1px solid #e2e8f0; padding: 4px; border-radius: 4px; }
+        .Dr.Ali-stamp { font-family: 'Cairo', sans-serif; font-weight: 900; font-size: 9px; color: #94a3b8; letter-spacing: 0.5px; text-align: center; line-height: 1.1; border: 1px solid #e2e8f0; padding: 4px; border-radius: 4px; }
 
         @media print { 
             .no-print { display: none; } 
@@ -272,7 +272,6 @@
                 if (i18n[lang][key]) el.setAttribute('placeholder', i18n[lang][key]);
             });
         }
-
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-lang-ar').addEventListener('click', () => setLanguage('ar'));
             document.getElementById('btn-lang-en').addEventListener('click', () => setLanguage('en'));
@@ -284,6 +283,7 @@
             const planOutput = document.getElementById('plan-output');
             const placeholderBox = document.getElementById('placeholder-box');
             const exportControls = document.getElementById('export-controls');
+    	    if (aiGenerateBtn.disabled) return;
 
             async function fetchLessonPlan(subject, grade, topic, manualOutcomes, senCategory) {
                 const isEnglish = (subject === "اللغة الإنجليزية");
@@ -333,21 +333,19 @@
                 const data = await response.json();
 
 if (!response.ok) {
-    console.error("SERVER ERROR:", apiResult);
+    console.error("SERVER ERROR:", data);
 
     throw new Error(
-        apiResult?.error?.message ||
-        apiResult?.error ||
-        JSON.stringify(apiResult)
+        data?.error?.message ||
+        data?.error ||
+        JSON.stringify(data)
     );
 }
 
-const parsedPlan = data.data;
-return parsedPlan;
-            }
+return data.data;            }
 
             function formatTags(text) {
-                if(!text) return "";
+                if(!text || typeof text !== 'string') return "";
                 return text
                     .replace(/\[الربط بالواقع\]/g, '<span class="tag-badge tag-real-world">🌍 الربط بالواقع</span>')
                     .replace(/\[الهوية الوطنية\]/g, '<span class="tag-badge tag-identity">🇦🇪 الهوية الوطنية</span>')
@@ -358,7 +356,7 @@ return parsedPlan;
 
             function formatAssessment(text) {
                 if(!text) return "";
-                const parts = text.split("، آلية القياس:");
+                const parts = String(text).split("، آلية القياس:");
                 if(parts.length > 1) {
                     return `<div><strong>${parts[0]}</strong></div><div class="measurement-badge">🛠 ${parts[1]}</div>`;
                 }
@@ -374,10 +372,19 @@ return parsedPlan;
                 const teacher = document.getElementById('teacher-name').value || "..................";
                 const date = document.getElementById('lesson-date').value || new Date().toLocaleDateString('ar-AE');
 
-                if (!topic) return alert(currentLang === 'ar' ? "يرجى إدخال عنوان الدرس" : "Please enter the lesson topic");
+                if (!topic.trim()) return alert(currentLang === 'ar' ? "يرجى إدخال عنوان الدرس" : "Please enter the lesson topic");
 
                 aiGenerateBtn.disabled = true; aiLoader.classList.remove('hidden');
                 aiBtnText.textContent = i18n[currentLang].btnGenerating;
+		const cleanTopic = topic.replace(/[<>]/g, '');
+		const cleanManual = manual.replace(/[<>]/g, '');
+		const plan = await fetchLessonPlan(
+		    subject,
+		    grade,
+		    cleanTopic,
+		    cleanManual,
+		    sen
+		);
 
                 try {
                     const plan = await fetchLessonPlan(subject, grade, topic, manual, sen);
@@ -396,19 +403,38 @@ return parsedPlan;
             });
 
             function renderPlan(plan) {
+                if (!plan || !plan.data) {
+                   throw new Error("Invalid lesson plan structure");
+                }
                 const isEnglish = plan.isEnglish;
                 const dir = isEnglish ? "ltr" : "rtl";
                 const data = plan.data;
 
-                planOutput.innerHTML = `
-                <div class="plan-page" style="direction: ${dir};">
+                data.loMapped = data.loMapped || [];
+		data.activities = data.activities || [];
+		data.studentReflection = data.studentReflection || { prompts: [] };
+
+		data.diffMatrix = data.diffMatrix || {
+		    gifted: "",
+		    high: "",
+		    mid: "",
+		    low: "",
+		    sen: ""
+		};
+		const template = `
+		...
+		`;
+
+		planOutput.innerHTML = DOMPurify.sanitize(template);                
+		<div class="plan-page" style="direction: ${dir};">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 3pt solid #0f172a; padding-bottom:10px; margin-bottom:15px;">
-                        <img src="https://board-ey1r.onrender.com/icons/logo.png" style="width: 100px;">
+                        <img src="https://board-ey1r.onrender.com/icons/logo.png"
+			  crossorigin="anonymous" style="width: 100px;">
                         <div style="text-align:center;">
                             <div style="font-weight: 800; font-size: 14px;">مجمّع زايد التعليمي الظيت الجنوبي</div>
                             <h1 style="font-size: 22px; font-weight: 900; color: #0f172a; margin: 5px 0;">التخطيط الدرسي المتكامل (UAE DSIB)</h1>
                         </div>
-                        <div class="mnagment-stamp">APPROVED BY<br></div>
+                        <div class="Dr.Ali-stamp">APPROVED BY<br></div>
                     </div>
 
                     <table>
@@ -543,6 +569,9 @@ return parsedPlan;
             }
 
             // تصدير Word ليكون مطابقاً تماماً للمعاينة
+	* {
+	   box-sizing: border-box;
+	}
             document.getElementById('word-download-btn').addEventListener('click', () => {
                 if (!planOutput.innerHTML) return;
                 const title = document.getElementById('cell-title').innerText || 'تخطيط';
@@ -550,6 +579,7 @@ return parsedPlan;
                 
                 const htmlStr = `
                 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40" dir="rtl">
+		<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
                 <head>
                     <meta charset="utf-8">
                     <title>${title}</title>
@@ -569,7 +599,7 @@ return parsedPlan;
                         .indicator-title { font-weight: bold; color: #0f172a; border-bottom: 2px solid #e2e8f0; display: block; padding-bottom: 4px; margin-bottom: 6px; }
                         .tag-badge { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 6px; font-size: 10px; margin: 2px; display: inline-block; }
                         .measurement-badge { background: #f8fafc; border: 1px solid #cbd5e1; font-size: 10px; padding: 4px; margin-top: 4px; display: block; font-weight: bold; }
-                        .maiada-stamp { font-weight: bold; font-size: 10px; color: #94a3b8; text-align: center; border: 1px solid #e2e8f0; padding: 4px; display: inline-block; }
+                        .Dr.Ali-stamp { font-weight: bold; font-size: 10px; color: #94a3b8; text-align: center; border: 1px solid #e2e8f0; padding: 4px; display: inline-block; }
                     </style>
                 </head>
                 <body>
@@ -589,7 +619,11 @@ return parsedPlan;
                 const pages = document.querySelectorAll('.plan-page');
                 
                 for (let i = 0; i < pages.length; i++) {
-                    const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true });
+                    const canvas = await html2canvas(pages[i], {
+    		scale: 1.2,
+		    useCORS: true,
+		    removeContainer: true
+		});
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     
                     const pdfWidth = 210;
