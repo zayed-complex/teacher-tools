@@ -330,23 +330,14 @@
                     })
                 });
 
-                const apiResult = await response.json();
-                console.log("RAW SERVER RESPONSE:", apiResult);
+                const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(apiResult.error || "Server error");
-                }
+if (!response.ok) {
+    throw new Error(data.error || "Server error");
+}
 
-                // ✅ FIX: Extract the JSON text from Gemini's response structure
-                const textContent = apiResult.candidates[0].content.parts[0].text;
-                console.log("EXTRACTED TEXT:", textContent);
-
-                // ✅ FIX: Clean and parse the JSON
-                const cleanedText = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-                const parsedPlan = JSON.parse(cleanedText);
-                
-                console.log("PARSED PLAN:", parsedPlan);
-                return parsedPlan;
+const parsedPlan = data.data;
+return parsedPlan;
             }
 
             function formatTags(text) {
