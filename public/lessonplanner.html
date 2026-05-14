@@ -333,7 +333,13 @@
                 const data = await response.json();
 
 if (!response.ok) {
-    throw new Error(data.error || "Server error");
+    console.error("SERVER ERROR:", apiResult);
+
+    throw new Error(
+        apiResult?.error?.message ||
+        apiResult?.error ||
+        JSON.stringify(apiResult)
+    );
 }
 
 const parsedPlan = data.data;
