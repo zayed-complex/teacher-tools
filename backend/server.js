@@ -4,8 +4,10 @@ import dotenv from "dotenv";
 import axios from "axios";
 import path from "path";
 import { fileURLToPath } from "url";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 console.log("API KEY EXISTS:", !!process.env.GEMINI_API_KEY);
 console.log("API KEY START:", process.env.GEMINI_API_KEY?.slice(0, 10));
 const app = express();
@@ -72,20 +74,9 @@ Make sure each version has different questions but covers the same topic.`;
 }`;
 
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-            {
-                contents: [{ parts: [{ text: promptText }] }],
-                systemInstruction: { parts: [{ text: systemInstruction }] },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    temperature: 0.7
-                }
-            },
-            {
-                headers: { "Content-Type": "application/json" }
-            }
-        );
-
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash"
+});
         const rawText = response.data.candidates[0].content.parts[0].text;
         const examData = JSON.parse(rawText);
 
