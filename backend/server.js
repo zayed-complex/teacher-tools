@@ -6,7 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 dotenv.config();
-
+console.log("KEY:", process.env.GEMINI_API_KEY);
 const app = express();
 app.use(cors());
 app.use(express.json());
