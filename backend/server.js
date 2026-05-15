@@ -6,8 +6,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 dotenv.config();
-console.log("API KEY EXISTS:", !!process.env.GOOGLE_API_KEY);
-console.log("API KEY START:", process.env.GOOGLE_API_KEY?.slice(0, 10));const app = express();
+console.log("API KEY EXISTS:", !!process.env.GEMINI_API_KEY;
+console.log("API KEY START:", process.env.GEMINI_API_KEY?.slice(0, 10));const app = express();
 app.use(cors());
 app.use(express.json());
 
